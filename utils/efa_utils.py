@@ -55,12 +55,12 @@ def _kmo_label(kmo: float) -> str:
 # ─────────────────────────────────────────
 # 2. Determine Number of Factors
 # ─────────────────────────────────────────
-
+"""
 def determine_n_factors(df: pd.DataFrame) -> dict:
-    """
-    Compute eigenvalues and suggest n_factors via Kaiser criterion (eigenvalue > 1).
-    Also returns all eigenvalues for scree plot.
-    """
+    
+    #Compute eigenvalues and suggest n_factors via Kaiser criterion (eigenvalue > 1).
+    #Also returns all eigenvalues for scree plot.
+    
     fa = FactorAnalyzer(n_factors=min(len(df.columns), len(df) - 1), rotation=None)
     fa.fit(df)
     ev, v = fa.get_eigenvalues()
@@ -71,6 +71,68 @@ def determine_n_factors(df: pd.DataFrame) -> dict:
     return {
         "eigenvalues": ev.tolist(),
         "suggested_n": kaiser_n,
+    }
+"""
+import numpy as np
+import pandas as pd
+from factor_analyzer import FactorAnalyzer
+
+def _prepare_efa_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean dataset for EFA safely."""
+    
+    # 1. numeric only
+    df = df.select_dtypes(include=[np.number])
+
+    # 2. remove inf / -inf
+    df = df.replace([np.inf, -np.inf], np.nan)
+
+    # 3. drop rows with NaN (or replace with mean if you prefer)
+    df = df.dropna()
+
+    # 4. remove constant columns
+    df = df.loc[:, df.nunique() > 1]
+
+    return df
+
+
+def determine_n_factors(df: pd.DataFrame) -> dict:
+    """
+    Compute eigenvalues and suggest n_factors via Kaiser criterion.
+    Streamlit-safe version.
+    """
+
+    df_clean = _prepare_efa_df(df)
+
+    # 🔴 HARD SAFETY CHECKS
+    if df_clean.shape[1] < 3:
+        raise ValueError(
+            f"EFA requires at least 3 valid numeric variables. "
+            f"Got {df_clean.shape[1]}."
+        )
+
+    if df_clean.shape[0] < df_clean.shape[1] * 5:
+        raise ValueError(
+            "Insufficient sample size for stable EFA. "
+            "Rule of thumb: at least 5–10 observations per variable."
+        )
+
+    # 🔥 IMPORTANT FIX: use cleaned df
+    fa = FactorAnalyzer(
+        n_factors=min(df_clean.shape[1], df_clean.shape[0] - 1),
+        rotation=None
+    )
+
+    fa.fit(df_clean)
+
+    ev, v = fa.get_eigenvalues()
+
+    kaiser_n = int(np.sum(ev > 1))
+    kaiser_n = max(1, kaiser_n)
+
+    return {
+        "eigenvalues": ev.tolist(),
+        "suggested_n": kaiser_n,
+        "clean_shape": df_clean.shape
     }
 
 
