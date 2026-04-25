@@ -17,26 +17,21 @@ from plotly.subplots import make_subplots
 import streamlit as st
 from factor_analyzer import FactorAnalyzer, calculate_kmo, calculate_bartlett_sphericity
 
-# ── sklearn ≥ 1.6 compatibility patch ────────────────────────────────────────
-# factor_analyzer 0.5.x uses the deprecated `force_all_finite` kwarg which was
-# renamed to `ensure_all_finite` in scikit-learn 1.6. Patch both submodules.
+# ── sklearn >= 1.6 compatibility ─────────────────────────────────────────────
+# factor_analyzer 0.5.x uses force_all_finite, renamed ensure_all_finite in sklearn 1.6
 try:
     import factor_analyzer.factor_analyzer as _fa_mod
     import factor_analyzer.confirmatory_factor_analyzer as _cfa_mod
     from sklearn.utils.validation import check_array as _orig_check_array
-
     def _compat_check_array(*args, **kwargs):
         if "force_all_finite" in kwargs:
             val = kwargs.pop("force_all_finite")
-            # "allow-nan" / False  → ensure_all_finite=False
-            # True                 → ensure_all_finite=True
             kwargs["ensure_all_finite"] = (val is True)
         return _orig_check_array(*args, **kwargs)
-
     _fa_mod.check_array  = _compat_check_array
     _cfa_mod.check_array = _compat_check_array
 except Exception:
-    pass  # older sklearn — patch not needed
+    pass
 # ─────────────────────────────────────────────────────────────────────────────
 
 warnings.filterwarnings("ignore")
@@ -132,7 +127,6 @@ def check_efa_suitability(df: pd.DataFrame) -> dict:
 
 
 def determine_n_factors(df: pd.DataFrame) -> dict:
-    # Cap: must be < n_variables AND < n_samples (FactorAnalyzer constraint)
     max_factors = max(1, min(len(df.columns) - 1, len(df) - 1))
     fa = FactorAnalyzer(n_factors=max_factors, rotation=None)
     fa.fit(df)
@@ -485,9 +479,9 @@ hr{{border:none;border-top:1px solid var(--border);margin:28px 0;}}
     kmo_b = "bp" if s["kmo_pass"] else "bf"
     bar_b = "bp" if s["bartlett_pass"] else "bf"
     ov_b  = "bp" if s["overall_pass"]  else "bf"
-    _ov_txt  = "PASS" if s["overall_pass"] else "FAIL"
-    _kmo_txt = "PASS" if s["kmo_pass"]     else "FAIL"
-    _bar_txt = "PASS" if s["bartlett_pass"] else "FAIL"
+    _ov_txt  = "PASS" if s["overall_pass"]  else "FAIL"
+    _kmo_txt = "PASS" if s["kmo_pass"]      else "FAIL"
+    _bar_txt = "PASS" if s["bartlett_pass"]  else "FAIL"
     html += f"""<h2>2. EFA Suitability</h2>
 <div class="card">
   <div style="margin-bottom:12px">Overall: <span class="badge {ov_b}">{_ov_txt}</span></div>
@@ -542,11 +536,16 @@ hr{{border:none;border-top:1px solid var(--border);margin:28px 0;}}
     if cfa_result and cfa_result["success"] and fit_assessment:
         fa = fit_assessment
         ov_b2 = "bp" if fa["overall_pass"] else "bf"
-        fit_rows = "".join(
-            f"<tr><td>{idx}</td><td>{d['value']}</td><td>{d['direction']} {d['threshold']}</td>"
-            ("<td><span class='badge " + ("bp" if d["pass_"] else "bf") + "'>" + ("PASS" if d["pass_"] else "FAIL") + "</span></td></tr>")
-            for idx, d in fa["indices"].items()
-        )
+        fit_rows_parts = []
+        for idx, d in fa["indices"].items():
+            badge_cls  = "bp" if d["pass_"] else "bf"
+            badge_text = "PASS" if d["pass_"] else "FAIL"
+            fit_rows_parts.append(
+                f"<tr><td>{idx}</td><td>{d['value']}</td>"
+                f"<td>{d['direction']} {d['threshold']}</td>"
+                f"<td><span class='badge {badge_cls}'>{badge_text}</span></td></tr>"
+            )
+        fit_rows = "".join(fit_rows_parts)
         _cfa_fit_txt = "ADEQUATE" if fa["overall_pass"] else "INADEQUATE"
         html += f"""<h2>4. Confirmatory Factor Analysis</h2>
 <div class="card">
@@ -604,7 +603,6 @@ _DEFAULTS = dict(
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
         st.session_state[_k] = _v
-# dropped_vars separately — mutable default must never be shared across reruns
 if "dropped_vars" not in st.session_state:
     st.session_state["dropped_vars"] = []
 S = st.session_state
@@ -677,7 +675,6 @@ if uploaded:
         try:
             fname = uploaded.name.lower()
             if fname.endswith(".csv"):
-                # Fallback encoding for Windows/SPSS survey exports
                 try:
                     df_raw = pd.read_csv(uploaded, encoding="utf-8")
                 except UnicodeDecodeError:
@@ -688,14 +685,12 @@ if uploaded:
             else:
                 st.error("❌ Unsupported file type. Upload a .csv, .xlsx, or .xls file.")
                 st.stop()
-
             df_numeric = df_raw.select_dtypes(include=[np.number]).dropna()
             if len(df_numeric.columns) < 3:
                 st.error("❌ Need at least 3 numeric variables. Non-numeric columns are excluded automatically.")
                 st.stop()
             if len(df_numeric) < 30:
                 st.warning("⚠️ Fewer than 30 observations — factor analysis results may be unreliable.")
-
             S.df_original    = df_numeric.copy()
             S.df_working     = df_numeric.copy()
             S.dropped_vars   = []
@@ -838,7 +833,7 @@ else:
                 else "color: #fb923c")
 
     styled = (diag.style
-              .applymap(_colour_issue, subset=["Issue"])
+              .map(_colour_issue, subset=["Issue"])
               .format({"MaxLoading": "{:.3f}", "Communality": "{:.3f}", "Severity": "{:.3f}"})
               .background_gradient(subset=["Severity"], cmap="Reds"))
     st.dataframe(styled, use_container_width=True, hide_index=True)
