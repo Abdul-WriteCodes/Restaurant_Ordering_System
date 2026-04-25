@@ -110,7 +110,9 @@ def check_efa_suitability(df: pd.DataFrame) -> dict:
 
 
 def determine_n_factors(df: pd.DataFrame) -> dict:
-    fa = FactorAnalyzer(n_factors=min(len(df.columns), len(df) - 1), rotation=None)
+    max_factors = min(len(df.columns), len(df) - 1, len(df.columns) - 1)
+    max_factors = max(1, max_factors)
+    fa = FactorAnalyzer(n_factors=max_factors, rotation=None)
     fa.fit(df)
     ev, _ = fa.get_eigenvalues()
     return dict(eigenvalues=ev.tolist(), suggested_n=max(1, int(np.sum(ev > 1))))
@@ -218,8 +220,9 @@ def assess_cfa_fit(fit_indices: dict, thresholds: dict) -> dict:
             passed = val >= thresh if direction == "≥" else val <= thresh
             assessment[idx] = dict(value=val, threshold=thresh, pass_=passed, direction=direction)
     n_pass = sum(1 for v in assessment.values() if v["pass_"])
+    n_total = len(assessment)
     return dict(indices=assessment, n_pass=n_pass,
-                n_total=len(assessment), overall_pass=n_pass == len(assessment) > 0)
+                n_total=n_total, overall_pass=(n_total > 0 and n_pass == n_total))
 
 
 def get_modification_suggestions(fit_assessment: dict) -> list:
@@ -313,7 +316,7 @@ def plot_loading_heatmap(loadings: pd.DataFrame, threshold: float = 0.4) -> go.F
     fig = go.Figure(go.Heatmap(
         z=z, x=factors, y=variables, zmid=0, zmin=-1, zmax=1,
         colorscale=[[0,"#1e1b4b"],[0.5,C["surface"]],[1,C["accent"]]],
-        colorbar=dict(title="Loading", tickfont=dict(color=C["text"]), titlefont=dict(color=C["text"])),
+        colorbar=dict(title="Loading", tickfont=dict(color=C["text"]), title_font=dict(color=C["text"])),
         hovertemplate="%{y} → %{x}<br>Loading: %{z:.3f}<extra></extra>",
     ))
     fig.update_layout(**LAYOUT_BASE, annotations=annotations,
@@ -362,14 +365,14 @@ def plot_fit_indices(fit_assessment: dict) -> go.Figure:
 
 
 def plot_correlation_matrix(df: pd.DataFrame) -> go.Figure:
-    corr = df.corr().round(2)
+    corr = df.corr(numeric_only=True).round(2)
     cols = corr.columns.tolist()
     annotations = [dict(x=c, y=r, text=f"{corr.loc[r,c]:.2f}", showarrow=False,
                         font=dict(size=9, color="white" if abs(corr.loc[r,c]) > 0.5 else C["text"]))
                    for r in corr.index for c in cols]
     fig = go.Figure(go.Heatmap(
         z=corr.values, x=cols, y=cols, colorscale="RdBu", zmid=0, zmin=-1, zmax=1,
-        colorbar=dict(title="r", tickfont=dict(color=C["text"]), titlefont=dict(color=C["text"])),
+        colorbar=dict(title="r", tickfont=dict(color=C["text"]), title_font=dict(color=C["text"])),
         hovertemplate="%{y} × %{x}<br>r = %{z:.2f}<extra></extra>",
     ))
     fig.update_layout(**LAYOUT_BASE, annotations=annotations,
@@ -460,14 +463,17 @@ hr{{border:none;border-top:1px solid var(--border);margin:28px 0;}}
     kmo_b = "bp" if s["kmo_pass"] else "bf"
     bar_b = "bp" if s["bartlett_pass"] else "bf"
     ov_b  = "bp" if s["overall_pass"]  else "bf"
+    ov_text  = "PASS" if s["overall_pass"] else "FAIL"
+    kmo_text = "PASS" if s["kmo_pass"] else "FAIL"
+    bar_text = "PASS" if s["bartlett_pass"] else "FAIL"
     html += f"""<h2>2. EFA Suitability</h2>
 <div class="card">
-  <div style="margin-bottom:12px">Overall: <span class="badge {ov_b}">{'PASS' if s['overall_pass'] else 'FAIL'}</span></div>
+  <div style="margin-bottom:12px">Overall: <span class="badge {ov_b}">{ov_text}</span></div>
   <table><thead><tr><th>Test</th><th>Value</th><th>Threshold</th><th>Result</th></tr></thead><tbody>
   <tr><td>KMO</td><td>{s['kmo_model']} — <em>{s['kmo_label']}</em></td><td>≥ 0.60</td>
-    <td><span class="badge {kmo_b}">{'PASS' if s['kmo_pass'] else 'FAIL'}</span></td></tr>
+    <td><span class="badge {kmo_b}">{kmo_text}</span></td></tr>
   <tr><td>Bartlett's Sphericity</td><td>χ² = {s['bartlett_chi2']}, p = {s['bartlett_p']}</td><td>p &lt; 0.05</td>
-    <td><span class="badge {bar_b}">{'PASS' if s['bartlett_pass'] else 'FAIL'}</span></td></tr>
+    <td><span class="badge {bar_b}">{bar_text}</span></td></tr>
   </tbody></table>
 </div>
 """
@@ -516,13 +522,14 @@ hr{{border:none;border-top:1px solid var(--border);margin:28px 0;}}
         ov_b2 = "bp" if fa["overall_pass"] else "bf"
         fit_rows = "".join(
             f"<tr><td>{idx}</td><td>{d['value']}</td><td>{d['direction']} {d['threshold']}</td>"
-            f"<td><span class='badge {'bp' if d['pass_'] else 'bf'}'>{'PASS' if d['pass_'] else 'FAIL'}</span></td></tr>"
+            ("<td><span class='badge " + ("bp" if d["pass_"] else "bf") + "'>" + ("PASS" if d["pass_"] else "FAIL") + "</span></td></tr>")
             for idx, d in fa["indices"].items()
         )
+        cfa_fit_text = "ADEQUATE" if fa["overall_pass"] else "INADEQUATE"
         html += f"""<h2>4. Confirmatory Factor Analysis</h2>
 <div class="card">
   <div style="margin-bottom:12px">
-    Model Fit: <span class="badge {ov_b2}">{'ADEQUATE' if fa['overall_pass'] else 'INADEQUATE'}</span>
+    Model Fit: <span class="badge {ov_b2}">{cfa_fit_text}</span>
     &nbsp;<span style="color:var(--muted);font-size:.85rem">{fa['n_pass']}/{fa['n_total']} indices passed</span>
   </div>
   <table><thead><tr><th>Index</th><th>Value</th><th>Threshold</th><th>Result</th></tr></thead>
@@ -568,13 +575,16 @@ _DEFAULTS = dict(
     df_original=None, df_working=None, suitability=None,
     n_factors_auto=None, eigenvalues=None,
     efa_result=None, diagnostics=None, efa_done=False,
-    dropped_vars=[], cfa_result=None, fit_assessment=None,
+    cfa_result=None, fit_assessment=None,
     synthetic_factor=None, synthetic_corr=None,
     syn_validation=None, report_html=None,
 )
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
         st.session_state[_k] = _v
+# dropped_vars separately — never share a list object across reruns
+if "dropped_vars" not in st.session_state:
+    st.session_state["dropped_vars"] = []
 S = st.session_state
 
 
@@ -640,22 +650,48 @@ with col_up2:
     st.markdown('<div class="info-box">💡 <b>Requirements</b><br>• Numeric variables only<br>• Minimum 5 variables<br>• Recommended ≥ 100 rows<br>• Missing values auto-dropped</div>', unsafe_allow_html=True)
 
 if uploaded:
-    try:
-        df_raw = pd.read_csv(uploaded) if uploaded.name.endswith(".csv") else pd.read_excel(uploaded)
-        df_numeric = df_raw.select_dtypes(include=[np.number]).dropna()
-        if len(df_numeric.columns) < 3:
-            st.error("❌ Need at least 3 numeric variables.")
+    # Guard: only re-parse when a NEW file is uploaded (name+size as identity key)
+    _file_key = f"{uploaded.name}_{uploaded.size}"
+    if S.get("_last_file_key") != _file_key:
+        try:
+            fname = uploaded.name.lower()
+            if fname.endswith(".csv"):
+                # Fallback encoding for Windows/survey exports (latin-1 for SPSS/Excel-exported CSVs)
+                try:
+                    df_raw = pd.read_csv(uploaded, encoding="utf-8")
+                except UnicodeDecodeError:
+                    uploaded.seek(0)
+                    df_raw = pd.read_csv(uploaded, encoding="latin-1")
+            elif fname.endswith((".xlsx", ".xls")):
+                df_raw = pd.read_excel(uploaded)
+            else:
+                st.error("❌ Unsupported file type. Upload a .csv, .xlsx, or .xls file.")
+                st.stop()
+
+            df_numeric = df_raw.select_dtypes(include=[np.number]).dropna()
+            if len(df_numeric.columns) < 3:
+                st.error("❌ Need at least 3 numeric variables. Non-numeric columns are excluded automatically.")
+                st.stop()
+            if len(df_numeric) < 30:
+                st.warning("⚠️ Fewer than 30 observations — factor analysis results may be unreliable.")
+
+            # Commit to session state — reset all downstream
+            S.df_original   = df_numeric.copy()
+            S.df_working    = df_numeric.copy()
+            S.dropped_vars  = []
+            S.suitability   = None
+            S.efa_result    = None
+            S.cfa_result    = None
+            S.fit_assessment = None
+            S.efa_done      = False
+            S.synthetic_factor = None
+            S.synthetic_corr   = None
+            S.syn_validation   = None
+            S.report_html      = None
+            S["_last_file_key"] = _file_key
+        except Exception as e:
+            st.error(f"❌ Could not parse file: {e}")
             st.stop()
-        if len(df_numeric) < 30:
-            st.warning("⚠️ Fewer than 30 observations — results may be unreliable.")
-        S.df_original = df_numeric.copy()
-        S.df_working  = df_numeric.copy()
-        S.dropped_vars = []
-        # Invalidate downstream on new upload
-        S.suitability = S.efa_result = S.cfa_result = None
-        S.efa_done = False
-    except Exception as e:
-        st.error(f"❌ Could not parse file: {e}"); st.stop()
 
 if S.df_original is None:
     st.markdown('<div class="warn-box">👆 Upload a dataset to begin.</div>', unsafe_allow_html=True)
