@@ -160,7 +160,7 @@ def plot_communalities(communalities: pd.Series,
 # ─────────────────────────────────────────
 # 4. CFA Fit Index Gauge / Bar
 # ─────────────────────────────────────────
-""""
+
 def plot_fit_indices(fit_assessment: dict) -> go.Figure:
     indices_data = fit_assessment.get("indices", {})
     if not indices_data:
@@ -209,7 +209,72 @@ def plot_fit_indices(fit_assessment: dict) -> go.Figure:
     )
     return fig
     
-    """"
+
+    # 7. Annotations (safe formatting)
+    annotations = []
+    for i, r in enumerate(corr.index):
+        for j, c in enumerate(corr.columns):
+            val = corr.iloc[i, j]
+
+            annotations.append(dict(
+                x=c,
+                y=r,
+                text=f"{val:.2f}",
+                showarrow=False,
+                font=dict(
+                    size=9,
+                    color="white" if abs(val) > 0.5 else "black"
+                )
+            ))
+
+    fig.update_layout(
+        title=title,
+        annotations=annotations,
+        height=max(350, len(cols) * 30 + 120),
+        xaxis=dict(tickangle=-35),
+    )
+
+    return fig
+
+
+
+
+# ─────────────────────────────────────────
+# 5. Correlation Matrix Heatmap
+# ─────────────────────────────────────────
+"""
+def plot_correlation_matrix(df: pd.DataFrame, title: str = "Correlation Matrix") -> go.Figure:
+    corr = df.corr().round(2)
+    cols = corr.columns.tolist()
+
+    fig = go.Figure(go.Heatmap(
+        z=corr.values,
+        x=cols, y=cols,
+        colorscale="RdBu",
+        zmid=0, zmin=-1, zmax=1,
+        colorbar=dict(title="r", tickfont=dict(color=TEXT), titlefont=dict(color=TEXT)),
+        hovertemplate="%{y} × %{x}<br>r = %{z:.2f}<extra></extra>",
+    ))
+
+    annotations = []
+    for i, r in enumerate(corr.index):
+        for j, c in enumerate(corr.columns):
+            val = corr.loc[r, c]
+            annotations.append(dict(
+                x=c, y=r, text=f"{val:.2f}", showarrow=False,
+                font=dict(size=9, color="white" if abs(val) > 0.5 else TEXT)
+            ))
+
+    fig.update_layout(
+        **LAYOUT_BASE,
+        title=dict(text=title, font=dict(color=ACCENT2)),
+        annotations=annotations,
+        height=max(350, len(cols) * 30 + 120),
+        xaxis=dict(tickangle=-35),
+    )
+    return fig
+"""
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -275,41 +340,6 @@ def plot_correlation_matrix(df: pd.DataFrame, title: str = "Correlation Matrix")
 
 
 
-
-# ─────────────────────────────────────────
-# 5. Correlation Matrix Heatmap
-# ─────────────────────────────────────────
-
-def plot_correlation_matrix(df: pd.DataFrame, title: str = "Correlation Matrix") -> go.Figure:
-    corr = df.corr().round(2)
-    cols = corr.columns.tolist()
-
-    fig = go.Figure(go.Heatmap(
-        z=corr.values,
-        x=cols, y=cols,
-        colorscale="RdBu",
-        zmid=0, zmin=-1, zmax=1,
-        colorbar=dict(title="r", tickfont=dict(color=TEXT), titlefont=dict(color=TEXT)),
-        hovertemplate="%{y} × %{x}<br>r = %{z:.2f}<extra></extra>",
-    ))
-
-    annotations = []
-    for i, r in enumerate(corr.index):
-        for j, c in enumerate(corr.columns):
-            val = corr.loc[r, c]
-            annotations.append(dict(
-                x=c, y=r, text=f"{val:.2f}", showarrow=False,
-                font=dict(size=9, color="white" if abs(val) > 0.5 else TEXT)
-            ))
-
-    fig.update_layout(
-        **LAYOUT_BASE,
-        title=dict(text=title, font=dict(color=ACCENT2)),
-        annotations=annotations,
-        height=max(350, len(cols) * 30 + 120),
-        xaxis=dict(tickangle=-35),
-    )
-    return fig
 
 
 # ─────────────────────────────────────────
