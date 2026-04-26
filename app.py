@@ -1162,7 +1162,7 @@ st.markdown("""
 st.markdown("_Upload your dataset and run a complete EFA → CFA pipeline. Diagnose items, confirm structure, generate synthetic data, and export your results._")
 
 if is_trial:
-    st.markdown('<div class="warn-box">⚡ <b>Free Trial mode</b> — all analysis runs are unlimited. Data export requires an access key with credits. <a href="https://your-payment-link" style="color:#fbbf24;">Get access →</a></div>', unsafe_allow_html=True)
+    st.markdown('<div class="warn-box">⚡ <b>Free Trial mode</b> — all analysis runs are unlimited. Data export requires an access key with credits. <a href="https://x.com/bayantx360" style="color:#fbbf24;">Get access →</a></div>', unsafe_allow_html=True)
 
 st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
 
