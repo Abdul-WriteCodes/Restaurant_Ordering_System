@@ -334,7 +334,7 @@ def render_landing():
                     background:linear-gradient(90deg,transparent,#6c8dfa 40%,#a78bfa 60%,transparent);"></div>
         <div style="font-family:Inter,sans-serif;font-size:10px;color:#34d399;
                     letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;font-weight:600;">
-          ◈ No credit card · Instant access
+          🔬 No credit card · Instant access
         </div>
         <div style="font-family:Inter,sans-serif;font-size:26px;font-weight:800;
                     background:linear-gradient(90deg,#e2e8f0,#6c8dfa);
@@ -1058,7 +1058,7 @@ with st.sidebar:
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
         <div style="width:32px;height:32px;background:linear-gradient(135deg,#6c8dfa,#a78bfa);
                     border-radius:8px;display:flex;align-items:center;justify-content:center;
-                    font-size:16px;flex-shrink:0;">◈</div>
+                    font-size:16px;flex-shrink:0;">🔬</div>
         <div>
           <div style="font-family:Inter,sans-serif;font-size:16px;font-weight:800;
                       background:linear-gradient(90deg,#6c8dfa,#a78bfa);
@@ -1146,7 +1146,7 @@ st.markdown("""
 <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px;">
   <div style="width:40px;height:40px;background:linear-gradient(135deg,#6c8dfa,#a78bfa);
               border-radius:10px;display:flex;align-items:center;justify-content:center;
-              font-size:20px;flex-shrink:0;">◈</div>
+              font-size:20px;flex-shrink:0;">🔬</div>
   <div>
     <div style="font-family:Inter,sans-serif;font-size:28px;font-weight:800;
                 background:linear-gradient(90deg,#6c8dfa,#a78bfa);
