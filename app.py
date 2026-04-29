@@ -470,7 +470,7 @@ def render_landing():
     with c:
         key_input = st.text_input("Access Key", placeholder="EFA-XXXX-XXXX-XXXX",
                                    label_visibility="collapsed", key="landing_key_input")
-        enter_btn = st.button("◈ Enter EFActor", type="primary", width='stretch')
+        enter_btn = st.button("🔬 Enter EFActor", type="primary", width='stretch')
         if enter_btn:
             if not key_input.strip():
                 st.error("Please enter your access key.")
