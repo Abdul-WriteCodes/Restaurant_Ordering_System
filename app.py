@@ -246,7 +246,7 @@ PLANS = [
     {
         "name": "Pro", "price": "$49", "credits": "100 credits",
         "period": "one-time", "color": "#a78bfa", "highlight": False,
-        "features": ["Unlimited EFA & CFA runs","10Dtaset exports",
+        "features": ["Unlimited EFA & CFA runs","Dtaset exports",
                      "Unlimited rows per export","Synthetic data generation",
                      "Word analysis report (.docx)",
                      "Access key via email"],
