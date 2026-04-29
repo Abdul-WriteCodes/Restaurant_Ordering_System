@@ -419,7 +419,7 @@ def render_landing():
               <div>{feats}</div>
             </div>
             """, unsafe_allow_html=True)
-            st.link_button(f"Get {plan['name']} →", url=plan["link"], use_container_width=True)
+            st.link_button(f"Get {plan['name']} →", url=plan["link"], width='stretch')
 
     # Credit cost table
     st.markdown("""
@@ -470,7 +470,7 @@ def render_landing():
     with c:
         key_input = st.text_input("Access Key", placeholder="EFA-XXXX-XXXX-XXXX",
                                    label_visibility="collapsed", key="landing_key_input")
-        enter_btn = st.button("◈ Enter EFActor", type="primary", use_container_width=True)
+        enter_btn = st.button("◈ Enter EFActor", type="primary", width='stretch')
         if enter_btn:
             if not key_input.strip():
                 st.error("Please enter your access key.")
