@@ -365,7 +365,7 @@ def render_landing():
 
     _, trial_col, _ = st.columns([1.4, 1, 1.4])
     with trial_col:
-        trial_btn = st.button("◈ Start Free Trial", type="primary", use_container_width=True, key="trial_btn")
+        trial_btn = st.button("◈ Start Free Trial", type="primary", width='stretch', key="trial_btn")
     st.markdown("<div style='margin-bottom:56px;'></div>", unsafe_allow_html=True)
 
     if trial_btn:
