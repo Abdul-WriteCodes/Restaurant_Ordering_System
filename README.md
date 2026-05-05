@@ -30,10 +30,10 @@ EFActor provides a fully integrated psychometric analysis pipeline for users to:
 
 # Core Features
 1. EFA (Exploratory Factor Analysis)
-   - KMO & Bartlett’s Test
-   - Eigenvalues + Scree Plot
-   - Factor Loadings (Varimax rotation)
-   - Communalities & Variance Explained
+   - 📈 KMO & Bartlett’s Test
+   - 📈 Eigenvalues + Scree Plot
+   - 📐 Factor Loadings (Varimax rotation)
+   - 📊 Communalities & Variance Explained
 
 2. Smart Diagnostics that detect and flag:
    - Low communality
